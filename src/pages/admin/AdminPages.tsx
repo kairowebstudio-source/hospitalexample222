@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Stethoscope, Calendar, Building, Trash2, Edit } from 'lucide-react';
+import { Users, Stethoscope, Calendar, Building, Trash2, Upload, ImageIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
@@ -27,13 +27,11 @@ export function AdminOverview() {
       ]);
       setStats({ patients: p.count || 0, doctors: d.count || 0, appointments: a.count || 0, departments: dept.count || 0 });
 
-      // Status chart
       const appts = a.data || [];
       const statusMap: Record<string, number> = {};
       appts.forEach((ap: any) => { statusMap[ap.status] = (statusMap[ap.status] || 0) + 1; });
       setStatusData(Object.entries(statusMap).map(([name, value]) => ({ name, value })));
 
-      // Monthly chart
       const monthMap: Record<string, number> = {};
       appts.forEach((ap: any) => {
         const month = ap.appointment_date?.substring(0, 7) || 'Unknown';
@@ -95,6 +93,8 @@ export function AdminDoctors() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', full_name: '', department_id: '', qualification: '', experience_years: 0, consultation_fee: 0 });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
@@ -105,6 +105,24 @@ export function AdminDoctors() {
   };
 
   useEffect(() => { load(); }, []);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
+  const uploadImage = async (userId: string): Promise<string | null> => {
+    if (!imageFile) return null;
+    const ext = imageFile.name.split('.').pop();
+    const path = `${userId}.${ext}`;
+    const { error } = await supabase.storage.from('doctor-images').upload(path, imageFile, { upsert: true });
+    if (error) { console.error('Upload error:', error); return null; }
+    const { data } = supabase.storage.from('doctor-images').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
   const addDoctor = async () => {
     setLoading(true);
@@ -128,9 +146,20 @@ export function AdminDoctors() {
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || 'Failed to create doctor');
+
+      // Upload image if selected
+      if (imageFile && result.user_id) {
+        const imageUrl = await uploadImage(result.user_id);
+        if (imageUrl) {
+          await supabase.from('doctors').update({ image_url: imageUrl } as any).eq('user_id', result.user_id);
+        }
+      }
+
       toast({ title: 'Doctor added!' });
       setDialogOpen(false);
       setForm({ email: '', password: '', full_name: '', department_id: '', qualification: '', experience_years: 0, consultation_fee: 0 });
+      setImageFile(null);
+      setImagePreview(null);
       load();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -145,15 +174,39 @@ export function AdminDoctors() {
     load();
   };
 
+  const getDoctorImageUrl = (doc: any) => {
+    if (doc.image_url) return doc.image_url;
+    return null;
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Manage Doctors</h1>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild><Button>Add Doctor</Button></DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader><DialogTitle>Add New Doctor</DialogTitle></DialogHeader>
             <div className="space-y-3">
+              {/* Image Upload */}
+              <div>
+                <Label>Photo</Label>
+                <div className="flex items-center gap-3 mt-1">
+                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center overflow-hidden border-2 border-dashed border-border">
+                    {imagePreview ? (
+                      <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <label className="cursor-pointer">
+                    <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <div className="flex items-center gap-1 text-sm text-primary hover:underline">
+                      <Upload className="h-3 w-3" /> Upload Photo
+                    </div>
+                  </label>
+                </div>
+              </div>
               <div><Label>Full Name</Label><Input value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} /></div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
               <div><Label>Password</Label><Input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
@@ -178,9 +231,18 @@ export function AdminDoctors() {
         {doctors.map(d => (
           <Card key={d.id}>
             <CardContent className="py-4 flex items-center justify-between">
-              <div>
-                <p className="font-medium">Dr. {d.profiles?.full_name}</p>
-                <p className="text-sm text-muted-foreground">{d.departments?.name} • {d.qualification} • {d.experience_years}yr exp</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {getDoctorImageUrl(d) ? (
+                    <img src={getDoctorImageUrl(d)} alt="Doctor" className="w-full h-full object-cover" />
+                  ) : (
+                    <Stethoscope className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <p className="font-medium">Dr. {d.profiles?.full_name}</p>
+                  <p className="text-sm text-muted-foreground">{d.departments?.name} • {d.qualification} • {d.experience_years}yr exp</p>
+                </div>
               </div>
               <div className="flex gap-2">
                 <Badge variant={d.status === 'active' ? 'default' : 'secondary'}>{d.status}</Badge>

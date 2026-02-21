@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Calendar, Clock, FileText, User, X } from 'lucide-react';
+import { Calendar, Clock, FileText, User, X, Stethoscope } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -16,14 +16,12 @@ export function PatientOverview() {
   const { user } = useAuth();
   const [appointments, setAppointments] = useState<any[]>([]);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
-  const [patientId, setPatientId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     const load = async () => {
       const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
       if (patient) {
-        setPatientId(patient.id);
         const { data: appts } = await supabase.from('appointments').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name)), departments(name)').eq('patient_id', patient.id).order('appointment_date', { ascending: false }).limit(5);
         setAppointments(appts || []);
         const { data: presc } = await supabase.from('prescriptions').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name))').eq('patient_id', patient.id).order('created_at', { ascending: false }).limit(5);
@@ -101,20 +99,29 @@ export function PatientOverview() {
 export function PatientBookAppointment() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [doctors, setDoctors] = useState<any[]>([]);
+  const [allDoctors, setAllDoctors] = useState<any[]>([]);
+  const [filteredDoctors, setFilteredDoctors] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
   const [form, setForm] = useState({ doctor_id: '', department_id: '', date: '', time: '', reason: '' });
   const [loading, setLoading] = useState(false);
   const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
 
   useEffect(() => {
-    supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name, email), departments(name)').eq('status', 'active').then(({ data }) => setDoctors(data || []));
+    supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name, email), departments(name)').eq('status', 'active').then(({ data }) => setAllDoctors(data || []));
     supabase.from('departments').select('*').then(({ data }) => setDepartments(data || []));
   }, []);
 
+  // Filter doctors when department changes
+  const handleDepartmentSelect = (deptId: string) => {
+    setForm(f => ({ ...f, department_id: deptId, doctor_id: '' }));
+    setSelectedDoctor(null);
+    const filtered = allDoctors.filter(d => d.department_id === deptId);
+    setFilteredDoctors(filtered);
+  };
+
   const handleDoctorSelect = (doctorId: string) => {
     setForm(f => ({ ...f, doctor_id: doctorId }));
-    const doc = doctors.find(d => d.id === doctorId);
+    const doc = allDoctors.find(d => d.id === doctorId);
     setSelectedDoctor(doc || null);
   };
 
@@ -125,11 +132,10 @@ export function PatientBookAppointment() {
     const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
     if (!patient) { toast({ title: 'Error', description: 'Patient profile not found.', variant: 'destructive' }); setLoading(false); return; }
 
-    const doc = doctors.find(d => d.id === form.doctor_id);
     const { error } = await supabase.from('appointments').insert({
       patient_id: patient.id,
       doctor_id: form.doctor_id,
-      department_id: doc?.department_id || form.department_id || null,
+      department_id: form.department_id || null,
       appointment_date: form.date,
       appointment_time: form.time,
       reason: form.reason,
@@ -139,9 +145,12 @@ export function PatientBookAppointment() {
       toast({ title: 'Appointment booked!', description: 'Your appointment has been scheduled.' });
       setForm({ doctor_id: '', department_id: '', date: '', time: '', reason: '' });
       setSelectedDoctor(null);
+      setFilteredDoctors([]);
     }
     setLoading(false);
   };
+
+  const getDoctorImage = (doc: any) => doc?.image_url || null;
 
   return (
     <div>
@@ -150,34 +159,73 @@ export function PatientBookAppointment() {
         <Card className="lg:col-span-2">
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Step 1: Select Department */}
               <div>
-                <Label>Select Doctor</Label>
-                <Select value={form.doctor_id} onValueChange={handleDoctorSelect}>
-                  <SelectTrigger><SelectValue placeholder="Choose a doctor" /></SelectTrigger>
+                <Label>1. Select Department</Label>
+                <Select value={form.department_id} onValueChange={handleDepartmentSelect}>
+                  <SelectTrigger><SelectValue placeholder="Choose a department" /></SelectTrigger>
                   <SelectContent>
-                    {doctors.map(d => (
-                      <SelectItem key={d.id} value={d.id}>
-                        Dr. {d.profiles?.full_name} — {d.departments?.name || 'General'}
-                      </SelectItem>
+                    {departments.map(d => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Step 2: Select Doctor (filtered by department) */}
+              <div>
+                <Label>2. Select Doctor</Label>
+                {!form.department_id ? (
+                  <p className="text-sm text-muted-foreground mt-1">Please select a department first</p>
+                ) : filteredDoctors.length === 0 ? (
+                  <p className="text-sm text-muted-foreground mt-1">No doctors available in this department</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+                    {filteredDoctors.map(d => (
+                      <Card
+                        key={d.id}
+                        className={`cursor-pointer transition-all hover:shadow-md ${form.doctor_id === d.id ? 'ring-2 ring-primary border-primary' : ''}`}
+                        onClick={() => handleDoctorSelect(d.id)}
+                      >
+                        <CardContent className="p-4 flex items-center gap-3">
+                          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                            {getDoctorImage(d) ? (
+                              <img src={getDoctorImage(d)} alt="Doctor" className="w-full h-full object-cover" />
+                            ) : (
+                              <Stethoscope className="h-5 w-5 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-sm truncate">Dr. {d.profiles?.full_name}</p>
+                            <p className="text-xs text-muted-foreground">{d.qualification || 'General'}</p>
+                            <p className="text-xs text-primary font-medium">${d.consultation_fee || 0}</p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Step 3: Date & Time */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Date</Label>
-                  <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+                  <Label>3. Date</Label>
+                  <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required min={new Date().toISOString().split('T')[0]} />
                 </div>
                 <div>
                   <Label>Time</Label>
                   <Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} required />
                 </div>
               </div>
+
+              {/* Step 4: Reason */}
               <div>
-                <Label>Reason</Label>
+                <Label>4. Reason for Visit</Label>
                 <Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Describe your symptoms or reason for visit" />
               </div>
-              <Button type="submit" className="w-full" disabled={loading || !form.doctor_id}>
+
+              <Button type="submit" className="w-full" disabled={loading || !form.doctor_id || !form.department_id}>
                 {loading ? 'Booking...' : 'Book Appointment'}
               </Button>
             </form>
@@ -185,7 +233,7 @@ export function PatientBookAppointment() {
         </Card>
 
         {/* Doctor Details Panel */}
-        <Card className={selectedDoctor ? '' : 'opacity-50'}>
+        <Card className={selectedDoctor ? 'animate-fade-in' : 'opacity-50'}>
           <CardHeader>
             <CardTitle className="text-base">Doctor Details</CardTitle>
           </CardHeader>
@@ -193,8 +241,14 @@ export function PatientBookAppointment() {
             {selectedDoctor ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
-                    <User className="h-6 w-6 text-primary-foreground" />
+                  <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                    {getDoctorImage(selectedDoctor) ? (
+                      <img src={getDoctorImage(selectedDoctor)} alt="Doctor" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full gradient-primary flex items-center justify-center">
+                        <User className="h-6 w-6 text-primary-foreground" />
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="font-semibold">Dr. {selectedDoctor.profiles?.full_name}</p>
@@ -248,7 +302,6 @@ export function PatientAppointments() {
 
   useEffect(() => { load(); }, [user]);
 
-  // Realtime subscription
   useEffect(() => {
     const channel = supabase.channel('patient-appointments').on('postgres_changes', { event: '*', schema: 'public', table: 'appointments' }, () => { load(); }).subscribe();
     return () => { supabase.removeChannel(channel); };
