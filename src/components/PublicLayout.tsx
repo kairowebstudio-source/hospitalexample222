@@ -1,8 +1,9 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Heart, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import AuthModal from '@/components/AuthModal';
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -12,12 +13,43 @@ const navLinks = [
   { to: '/contact', label: 'Contact' },
 ];
 
+type AuthMode = 'login' | 'register' | 'admin-login';
+
 export default function PublicLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [authModal, setAuthModal] = useState<AuthMode | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, role } = useAuth();
 
   const dashboardPath = role === 'admin' ? '/admin-dashboard' : role === 'doctor' ? '/doctor-dashboard' : '/patient-dashboard';
+
+  // Open modal based on route
+  useEffect(() => {
+    if (location.pathname === '/login') setAuthModal('login');
+    else if (location.pathname === '/register') setAuthModal('register');
+    else if (location.pathname === '/admin-login') setAuthModal('admin-login');
+    else setAuthModal(null);
+  }, [location.pathname]);
+
+  const openAuth = (mode: AuthMode) => {
+    setAuthModal(mode);
+    // Push route so URL reflects the auth state
+    navigate(mode === 'login' ? '/login' : mode === 'register' ? '/register' : '/admin-login');
+  };
+
+  const closeAuth = () => {
+    setAuthModal(null);
+    // Go back to the page underneath (home if we came from outside)
+    if (location.pathname === '/login' || location.pathname === '/register' || location.pathname === '/admin-login') {
+      navigate('/');
+    }
+  };
+
+  const switchMode = (mode: AuthMode) => {
+    setAuthModal(mode);
+    navigate(mode === 'login' ? '/login' : mode === 'register' ? '/register' : '/admin-login', { replace: true });
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -47,8 +79,8 @@ export default function PublicLayout() {
               </Link>
             ) : (
               <>
-                <Link to="/login"><Button variant="ghost" size="sm">Login</Button></Link>
-                <Link to="/register"><Button size="sm">Register</Button></Link>
+                <Button variant="ghost" size="sm" onClick={() => openAuth('login')}>Login</Button>
+                <Button size="sm" onClick={() => openAuth('register')}>Register</Button>
               </>
             )}
           </div>
@@ -59,7 +91,7 @@ export default function PublicLayout() {
         </div>
 
         {mobileOpen && (
-          <div className="md:hidden border-t border-border bg-card p-4 space-y-3">
+          <div className="md:hidden border-t border-border bg-card p-4 space-y-3 animate-fade-in">
             {navLinks.map((link) => (
               <Link key={link.to} to={link.to} className="block text-sm font-medium text-muted-foreground hover:text-primary" onClick={() => setMobileOpen(false)}>
                 {link.label}
@@ -70,8 +102,8 @@ export default function PublicLayout() {
                 <Link to={dashboardPath} onClick={() => setMobileOpen(false)}><Button size="sm">Dashboard</Button></Link>
               ) : (
                 <>
-                  <Link to="/login" onClick={() => setMobileOpen(false)}><Button variant="ghost" size="sm">Login</Button></Link>
-                  <Link to="/register" onClick={() => setMobileOpen(false)}><Button size="sm">Register</Button></Link>
+                  <Button variant="ghost" size="sm" onClick={() => { setMobileOpen(false); openAuth('login'); }}>Login</Button>
+                  <Button size="sm" onClick={() => { setMobileOpen(false); openAuth('register'); }}>Register</Button>
                 </>
               )}
             </div>
@@ -82,6 +114,11 @@ export default function PublicLayout() {
       <main className="flex-1">
         <Outlet />
       </main>
+
+      {/* Auth Modal Overlay */}
+      {authModal && !user && (
+        <AuthModal mode={authModal} onClose={closeAuth} onSwitchMode={switchMode} />
+      )}
 
       <footer className="bg-foreground text-background py-12">
         <div className="container mx-auto px-4">
