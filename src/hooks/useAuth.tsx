@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: AppRole | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -89,13 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { full_name: fullName } },
     });
-    if (!error && data.user) {
-      // Create patient role and patient record
-      await supabase.from('user_roles').insert({ user_id: data.user.id, role: 'patient' as any });
-      await supabase.from('patients').insert({ user_id: data.user.id });
-      setRole('patient');
-    }
-    return { error };
+    // Don't create role/patient here — the DB trigger handles it on email confirmation
+    return { error, needsConfirmation: !error && data.user && !data.session };
   };
 
   const signIn = async (email: string, password: string) => {
