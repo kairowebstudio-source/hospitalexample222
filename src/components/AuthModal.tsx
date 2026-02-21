@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Heart, Shield, X } from 'lucide-react';
+import { Shield, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.png';
 
 type AuthMode = 'login' | 'register' | 'admin-login';
 
@@ -70,12 +71,12 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
 
   const titles: Record<AuthMode, { icon: React.ReactNode; title: string; desc: string }> = {
     login: {
-      icon: <Heart className="h-8 w-8 text-primary fill-primary" />,
+      icon: <img src={logo} alt="LifeCare" className="h-10 w-10 object-contain" />,
       title: 'Welcome Back',
       desc: 'Sign in to your LifeCare account',
     },
     register: {
-      icon: <Heart className="h-8 w-8 text-primary fill-primary" />,
+      icon: <img src={logo} alt="LifeCare" className="h-10 w-10 object-contain" />,
       title: 'Patient Registration',
       desc: 'Create your LifeCare account',
     },

@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Heart, LogOut, User, ChevronDown } from 'lucide-react';
+import { LogOut, User, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import logo from '@/assets/logo.png';
 import { Button } from '@/components/ui/button';
 import {
   SidebarProvider,
@@ -49,7 +50,7 @@ export default function DashboardLayout({ navItems, title }: DashboardLayoutProp
         <Sidebar className="border-r border-sidebar-border">
           <div className="p-4 border-b border-sidebar-border">
             <Link to="/" className="flex items-center gap-2">
-              <Heart className="h-6 w-6 text-sidebar-primary fill-sidebar-primary" />
+              <img src={logo} alt="LifeCare" className="h-7 w-7 object-contain" />
               <span className="font-bold text-sidebar-foreground">LifeCare</span>
             </Link>
           </div>
