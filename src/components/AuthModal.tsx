@@ -23,6 +23,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
   const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -32,6 +33,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     setEmail('');
     setPassword('');
     setFullName('');
+    setEmailSent(false);
   }, [mode]);
 
   const handleClose = () => {
@@ -51,9 +53,11 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
     setLoading(true);
 
     if (mode === 'register') {
-      const { error } = await signUp(email, password, fullName);
+      const { error, needsConfirmation } = await signUp(email, password, fullName);
       if (error) {
         toast({ title: 'Registration failed', description: error.message, variant: 'destructive' });
+      } else if (needsConfirmation) {
+        setEmailSent(true);
       } else {
         toast({ title: 'Account created!', description: 'Welcome to LifeCare Hospital.' });
         navigate('/patient-dashboard');
@@ -113,6 +117,12 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
         </CardHeader>
 
         <CardContent className="px-6 pb-5">
+          {emailSent ? (
+            <div className="text-center space-y-3 animate-fade-in">
+              <p className="text-sm text-muted-foreground">We sent a confirmation link to <strong>{email}</strong>. Please verify your email, then sign in.</p>
+              <Button className="w-full h-9" onClick={() => { setEmailSent(false); onSwitchMode('login'); }}>Go to Login</Button>
+            </div>
+          ) : (
           <form onSubmit={handleSubmit} className="space-y-3">
             {mode === 'register' && (
               <div className="animate-fade-in">
@@ -135,6 +145,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
               }
             </Button>
           </form>
+          )}
 
           {mode === 'login' && (
             <div className="mt-3 text-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
