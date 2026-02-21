@@ -101,6 +101,7 @@ export type Database = {
           department_id: string | null
           experience_years: number | null
           id: string
+          image_url: string | null
           qualification: string | null
           status: string
           user_id: string
@@ -112,6 +113,7 @@ export type Database = {
           department_id?: string | null
           experience_years?: number | null
           id?: string
+          image_url?: string | null
           qualification?: string | null
           status?: string
           user_id: string
@@ -123,6 +125,7 @@ export type Database = {
           department_id?: string | null
           experience_years?: number | null
           id?: string
+          image_url?: string | null
           qualification?: string | null
           status?: string
           user_id?: string

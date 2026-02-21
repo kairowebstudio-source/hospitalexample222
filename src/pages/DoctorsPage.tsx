@@ -10,6 +10,7 @@ interface Doctor {
   experience_years: number;
   consultation_fee: number;
   status: string;
+  image_url?: string;
   profiles: { full_name: string; email: string } | null;
   departments: { name: string } | null;
 }
@@ -53,8 +54,14 @@ export default function DoctorsPage() {
               <Card key={doc.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-14 h-14 rounded-full gradient-primary flex items-center justify-center flex-shrink-0">
-                      <Stethoscope className="h-7 w-7 text-primary-foreground" />
+                    <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      {doc.image_url ? (
+                        <img src={doc.image_url} alt={`Dr. ${doc.profiles?.full_name}`} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full gradient-primary flex items-center justify-center">
+                          <Stethoscope className="h-7 w-7 text-primary-foreground" />
+                        </div>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold truncate">Dr. {doc.profiles?.full_name || 'Unknown'}</h3>
