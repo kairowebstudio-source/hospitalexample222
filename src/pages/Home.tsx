@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Heart, Calendar, Users, Shield, Stethoscope, Clock, Phone } from 'lucide-react';
+import heroBg from '@/assets/hero-bg.jpg';
 
 const features = [
   { icon: Stethoscope, title: 'Expert Doctors', description: 'Board-certified physicians across all specialties' },
@@ -21,17 +22,18 @@ export default function Home() {
   return (
     <div>
       {/* Hero */}
-      <section className="gradient-hero text-primary-foreground py-20 md:py-32">
-        <div className="container mx-auto px-4">
+      <section className="relative py-20 md:py-32 bg-cover bg-center" style={{ backgroundImage: `url(${heroBg})` }}>
+        <div className="absolute inset-0 gradient-hero opacity-80" />
+        <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-6">
               <Heart className="h-8 w-8 fill-primary text-primary" />
               <span className="text-primary font-semibold">LifeCare Hospital</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-primary-foreground">
               Your Health, Our <span className="text-gradient">Priority</span>
             </h1>
-            <p className="text-lg md:text-xl opacity-80 mb-8 max-w-lg">
+            <p className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-lg">
               Experience world-class healthcare with compassionate doctors and modern facilities. Book your appointment today.
             </p>
             <div className="flex flex-wrap gap-4">
