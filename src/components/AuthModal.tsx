@@ -63,7 +63,7 @@ export default function AuthModal({ mode, onClose, onSwitchMode }: AuthModalProp
       if (error) {
         toast({ title: 'Login failed', description: error.message, variant: 'destructive' });
       } else {
-        setTimeout(() => navigate('/login-redirect'), 500);
+        navigate('/login-redirect');
       }
     }
     setLoading(false);
