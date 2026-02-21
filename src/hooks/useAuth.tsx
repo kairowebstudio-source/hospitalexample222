@@ -26,9 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    return (data?.role as AppRole) || null;
+      .eq('user_id', userId);
+    if (!data || data.length === 0) return null;
+    // Prioritize admin > doctor > patient
+    const roles = data.map(r => r.role as AppRole);
+    if (roles.includes('admin')) return 'admin';
+    if (roles.includes('doctor')) return 'doctor';
+    return 'patient';
   };
 
   useEffect(() => {
