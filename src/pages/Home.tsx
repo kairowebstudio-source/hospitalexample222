@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, Users, Shield, Stethoscope, Clock, Phone } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import heroBg from '@/assets/hero-bg.jpg';
 import logo from '@/assets/logo.png';
 
@@ -52,6 +53,8 @@ function AnimatedSection({ children, className = '', delay = 0 }: { children: Re
 }
 
 export default function Home() {
+  const { user, role } = useAuth();
+  const bookLink = user && role === 'patient' ? '/patient-dashboard/book' : '/register';
   return (
     <div>
       {/* Hero */}
@@ -70,7 +73,7 @@ export default function Home() {
               Experience world-class healthcare with compassionate doctors and modern facilities. Book your appointment today.
             </p>
             <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.5s' }}>
-              <Link to="/register">
+              <Link to={bookLink}>
                 <Button size="lg" className="text-base hover-scale">Book Appointment</Button>
               </Link>
               <Link to="/about">
