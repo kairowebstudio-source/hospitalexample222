@@ -57,7 +57,7 @@ export function DoctorAppointments() {
     if (!user) return;
     const { data: doc } = await supabase.from('doctors').select('id').eq('user_id', user.id).maybeSingle();
     if (doc) {
-      const { data } = await supabase.from('appointments').select('*, patients(profiles!patients_user_id_profiles_fkey(full_name)), departments(name)').eq('doctor_id', doc.id).order('appointment_date', { ascending: false });
+      const { data } = await supabase.from('appointments').select('*, patients(id, gender, blood_group, date_of_birth, profiles!patients_user_id_profiles_fkey(full_name, email, phone)), departments(name)').eq('doctor_id', doc.id).order('appointment_date', { ascending: false });
       setAppointments(data || []);
     }
     setLoading(false);
@@ -121,7 +121,14 @@ export function DoctorAppointments() {
                   <div>
                     <p className="font-medium">{a.patients?.profiles?.full_name || 'Unknown Patient'}</p>
                     <p className="text-sm text-muted-foreground">{a.departments?.name} • {a.appointment_date} at {a.appointment_time}</p>
-                    {a.reason && <p className="text-sm text-muted-foreground">Reason: {a.reason}</p>}
+                    {a.patients?.profiles?.email && <p className="text-xs text-muted-foreground">Email: {a.patients.profiles.email}</p>}
+                    {a.patients?.profiles?.phone && <p className="text-xs text-muted-foreground">Phone: {a.patients.profiles.phone}</p>}
+                    <div className="flex gap-3 mt-1 text-xs text-muted-foreground">
+                      {a.patients?.gender && <span>Gender: {a.patients.gender}</span>}
+                      {a.patients?.blood_group && <span>Blood: {a.patients.blood_group}</span>}
+                      {a.patients?.date_of_birth && <span>DOB: {a.patients.date_of_birth}</span>}
+                    </div>
+                    {a.reason && <p className="text-sm text-muted-foreground mt-1">Reason: {a.reason}</p>}
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className={statusColor[a.status] || ''}>{a.status}</Badge>

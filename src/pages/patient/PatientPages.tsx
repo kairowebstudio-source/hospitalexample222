@@ -105,11 +105,18 @@ export function PatientBookAppointment() {
   const [departments, setDepartments] = useState<any[]>([]);
   const [form, setForm] = useState({ doctor_id: '', department_id: '', date: '', time: '', reason: '' });
   const [loading, setLoading] = useState(false);
+  const [selectedDoctor, setSelectedDoctor] = useState<any>(null);
 
   useEffect(() => {
-    supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name), departments(name)').eq('status', 'active').then(({ data }) => setDoctors(data || []));
+    supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name, email), departments(name)').eq('status', 'active').then(({ data }) => setDoctors(data || []));
     supabase.from('departments').select('*').then(({ data }) => setDepartments(data || []));
   }, []);
+
+  const handleDoctorSelect = (doctorId: string) => {
+    setForm(f => ({ ...f, doctor_id: doctorId }));
+    const doc = doctors.find(d => d.id === doctorId);
+    setSelectedDoctor(doc || null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,11 +125,11 @@ export function PatientBookAppointment() {
     const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
     if (!patient) { toast({ title: 'Error', description: 'Patient profile not found.', variant: 'destructive' }); setLoading(false); return; }
 
-    const selectedDoctor = doctors.find(d => d.id === form.doctor_id);
+    const doc = doctors.find(d => d.id === form.doctor_id);
     const { error } = await supabase.from('appointments').insert({
       patient_id: patient.id,
       doctor_id: form.doctor_id,
-      department_id: selectedDoctor?.department_id || form.department_id || null,
+      department_id: doc?.department_id || form.department_id || null,
       appointment_date: form.date,
       appointment_time: form.time,
       reason: form.reason,
@@ -131,6 +138,7 @@ export function PatientBookAppointment() {
     else {
       toast({ title: 'Appointment booked!', description: 'Your appointment has been scheduled.' });
       setForm({ doctor_id: '', department_id: '', date: '', time: '', reason: '' });
+      setSelectedDoctor(null);
     }
     setLoading(false);
   };
@@ -138,38 +146,86 @@ export function PatientBookAppointment() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">Book Appointment</h1>
-      <Card className="max-w-lg">
-        <CardContent className="pt-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Select Doctor</Label>
-              <Select value={form.doctor_id} onValueChange={(v) => setForm(f => ({ ...f, doctor_id: v }))}>
-                <SelectTrigger><SelectValue placeholder="Choose a doctor" /></SelectTrigger>
-                <SelectContent>
-                  {doctors.map(d => (
-                    <SelectItem key={d.id} value={d.id}>Dr. {d.profiles?.full_name} - {d.departments?.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Date</Label>
-              <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
-            </div>
-            <div>
-              <Label>Time</Label>
-              <Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} required />
-            </div>
-            <div>
-              <Label>Reason</Label>
-              <Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Describe your symptoms or reason for visit" />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading || !form.doctor_id}>
-              {loading ? 'Booking...' : 'Book Appointment'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <Label>Select Doctor</Label>
+                <Select value={form.doctor_id} onValueChange={handleDoctorSelect}>
+                  <SelectTrigger><SelectValue placeholder="Choose a doctor" /></SelectTrigger>
+                  <SelectContent>
+                    {doctors.map(d => (
+                      <SelectItem key={d.id} value={d.id}>
+                        Dr. {d.profiles?.full_name} — {d.departments?.name || 'General'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Date</Label>
+                  <Input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+                </div>
+                <div>
+                  <Label>Time</Label>
+                  <Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} required />
+                </div>
+              </div>
+              <div>
+                <Label>Reason</Label>
+                <Textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} placeholder="Describe your symptoms or reason for visit" />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading || !form.doctor_id}>
+                {loading ? 'Booking...' : 'Book Appointment'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
+        {/* Doctor Details Panel */}
+        <Card className={selectedDoctor ? '' : 'opacity-50'}>
+          <CardHeader>
+            <CardTitle className="text-base">Doctor Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedDoctor ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+                    <User className="h-6 w-6 text-primary-foreground" />
+                  </div>
+                  <div>
+                    <p className="font-semibold">Dr. {selectedDoctor.profiles?.full_name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedDoctor.profiles?.email}</p>
+                  </div>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Department</span>
+                    <Badge variant="secondary">{selectedDoctor.departments?.name || 'General'}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Qualification</span>
+                    <span className="font-medium">{selectedDoctor.qualification || 'N/A'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Experience</span>
+                    <span className="font-medium">{selectedDoctor.experience_years || 0} years</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Consultation Fee</span>
+                    <span className="font-medium text-primary">${selectedDoctor.consultation_fee || 0}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Select a doctor to view their details</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
