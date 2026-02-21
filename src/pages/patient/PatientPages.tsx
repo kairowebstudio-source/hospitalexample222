@@ -24,9 +24,9 @@ export function PatientOverview() {
       const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
       if (patient) {
         setPatientId(patient.id);
-        const { data: appts } = await supabase.from('appointments').select('*, doctors(profiles!doctors_user_id_fkey(full_name)), departments(name)').eq('patient_id', patient.id).order('appointment_date', { ascending: false }).limit(5);
+        const { data: appts } = await supabase.from('appointments').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name)), departments(name)').eq('patient_id', patient.id).order('appointment_date', { ascending: false }).limit(5);
         setAppointments(appts || []);
-        const { data: presc } = await supabase.from('prescriptions').select('*, doctors(profiles!doctors_user_id_fkey(full_name))').eq('patient_id', patient.id).order('created_at', { ascending: false }).limit(5);
+        const { data: presc } = await supabase.from('prescriptions').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name))').eq('patient_id', patient.id).order('created_at', { ascending: false }).limit(5);
         setPrescriptions(presc || []);
       }
     };
@@ -107,7 +107,7 @@ export function PatientBookAppointment() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    supabase.from('doctors').select('*, profiles!doctors_user_id_fkey(full_name), departments(name)').eq('status', 'active').then(({ data }) => setDoctors(data || []));
+    supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name), departments(name)').eq('status', 'active').then(({ data }) => setDoctors(data || []));
     supabase.from('departments').select('*').then(({ data }) => setDepartments(data || []));
   }, []);
 
@@ -184,7 +184,7 @@ export function PatientAppointments() {
     if (!user) return;
     const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
     if (patient) {
-      const { data } = await supabase.from('appointments').select('*, doctors(profiles!doctors_user_id_fkey(full_name)), departments(name)').eq('patient_id', patient.id).order('appointment_date', { ascending: false });
+      const { data } = await supabase.from('appointments').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name)), departments(name)').eq('patient_id', patient.id).order('appointment_date', { ascending: false });
       setAppointments(data || []);
     }
     setLoading(false);
@@ -255,7 +255,7 @@ export function PatientPrescriptions() {
     const load = async () => {
       const { data: patient } = await supabase.from('patients').select('id').eq('user_id', user.id).maybeSingle();
       if (patient) {
-        const { data } = await supabase.from('prescriptions').select('*, doctors(profiles!doctors_user_id_fkey(full_name))').eq('patient_id', patient.id).order('created_at', { ascending: false });
+        const { data } = await supabase.from('prescriptions').select('*, doctors(profiles!doctors_user_id_profiles_fkey(full_name))').eq('patient_id', patient.id).order('created_at', { ascending: false });
         setPrescriptions(data || []);
       }
       setLoading(false);
