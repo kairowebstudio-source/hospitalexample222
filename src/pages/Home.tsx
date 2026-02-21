@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Heart, Calendar, Users, Shield, Stethoscope, Clock, Phone } from 'lucide-react';
+import { Calendar, Users, Shield, Stethoscope, Clock, Phone } from 'lucide-react';
 import heroBg from '@/assets/hero-bg.jpg';
+import logo from '@/assets/logo.png';
 
 const features = [
   { icon: Stethoscope, title: 'Expert Doctors', description: 'Board-certified physicians across all specialties' },
@@ -27,7 +28,7 @@ export default function Home() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-6">
-              <Heart className="h-8 w-8 fill-primary text-primary" />
+              <img src={logo} alt="LifeCare" className="h-10 w-10 object-contain" />
               <span className="text-primary font-semibold">LifeCare Hospital</span>
             </div>
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight text-primary-foreground">

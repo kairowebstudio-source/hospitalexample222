@@ -1,9 +1,10 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Heart, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/AuthModal';
+import logo from '@/assets/logo.png';
 
 const navLinks = [
   { to: '/', label: 'Home' },
@@ -56,7 +57,7 @@ export default function PublicLayout() {
       <header className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <Heart className="h-7 w-7 text-primary fill-primary" />
+            <img src={logo} alt="LifeCare" className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold text-foreground">LifeCare</span>
           </Link>
 
@@ -125,7 +126,7 @@ export default function PublicLayout() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Heart className="h-6 w-6 text-primary fill-primary" />
+                <img src={logo} alt="LifeCare" className="h-7 w-7 object-contain" />
                 <span className="text-lg font-bold">LifeCare Hospital</span>
               </div>
               <p className="text-sm opacity-70">Providing quality healthcare services with compassion and excellence.</p>
