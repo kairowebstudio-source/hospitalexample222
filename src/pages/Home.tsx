@@ -42,7 +42,7 @@ export default function Home() {
                 <Button size="lg" className="text-base">Book Appointment</Button>
               </Link>
               <Link to="/about">
-                <Button size="lg" variant="outline" className="text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+                <Button size="lg" variant="secondary" className="text-base">
                   Learn More
                 </Button>
               </Link>
@@ -98,7 +98,7 @@ export default function Home() {
               <Button size="lg" variant="secondary" className="text-base">Register Now</Button>
             </Link>
             <Link to="/contact">
-              <Button size="lg" variant="outline" className="text-base border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button size="lg" variant="outline" className="text-base bg-primary-foreground/10 border-primary-foreground/40 text-primary-foreground hover:bg-primary-foreground/20">
                 <Phone className="mr-2 h-4 w-4" /> Contact Us
               </Button>
             </Link>
