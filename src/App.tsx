@@ -12,9 +12,6 @@ import About from "@/pages/About";
 import DoctorsPage from "@/pages/DoctorsPage";
 import DepartmentsPage from "@/pages/DepartmentsPage";
 import Contact from "@/pages/Contact";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import AdminLogin from "@/pages/AdminLogin";
 import LoginRedirect from "@/pages/LoginRedirect";
 import NotFound from "./pages/NotFound";
 
@@ -56,19 +53,20 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            {/* Public */}
+            {/* Public - auth modals render within PublicLayout */}
             <Route element={<PublicLayout />}>
               <Route path="/" element={<Home />} />
               <Route path="/about" element={<About />} />
               <Route path="/doctors" element={<DoctorsPage />} />
               <Route path="/departments" element={<DepartmentsPage />} />
               <Route path="/contact" element={<Contact />} />
+              {/* Auth routes render homepage underneath with modal overlay */}
+              <Route path="/login" element={<Home />} />
+              <Route path="/register" element={<Home />} />
+              <Route path="/admin-login" element={<Home />} />
             </Route>
 
-            {/* Auth */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/admin-login" element={<AdminLogin />} />
+            {/* Redirect */}
             <Route path="/login-redirect" element={<LoginRedirect />} />
 
             {/* Patient Dashboard */}
