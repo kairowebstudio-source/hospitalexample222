@@ -59,7 +59,7 @@ export default function Home() {
     <div>
       {/* Hero */}
       <section className="relative py-20 md:py-32 bg-cover bg-center overflow-hidden" style={{ backgroundImage: `url(${heroBg})` }}>
-        <div className="absolute inset-0 gradient-hero opacity-80" />
+        <div className="absolute inset-0 gradient-hero opacity-80 pointer-events-none" />
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-2xl">
             <div className="flex items-center gap-2 mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
