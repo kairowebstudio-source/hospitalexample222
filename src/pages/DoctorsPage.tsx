@@ -22,7 +22,7 @@ export default function DoctorsPage() {
     const fetch = async () => {
       const { data } = await supabase
         .from('doctors')
-        .select('*, profiles!doctors_user_id_fkey(full_name, email), departments(name)')
+        .select('*, profiles!doctors_user_id_profiles_fkey(full_name, email), departments(name)')
         .eq('status', 'active');
       setDoctors((data as any) || []);
       setLoading(false);

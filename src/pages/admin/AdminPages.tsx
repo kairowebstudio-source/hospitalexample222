@@ -98,7 +98,7 @@ export function AdminDoctors() {
   const [loading, setLoading] = useState(false);
 
   const load = async () => {
-    const { data } = await supabase.from('doctors').select('*, profiles!doctors_user_id_fkey(full_name, email), departments(name)');
+    const { data } = await supabase.from('doctors').select('*, profiles!doctors_user_id_profiles_fkey(full_name, email), departments(name)');
     setDoctors(data || []);
     const { data: depts } = await supabase.from('departments').select('*');
     setDepartments(depts || []);
@@ -108,34 +108,33 @@ export function AdminDoctors() {
 
   const addDoctor = async () => {
     setLoading(true);
-    // Create user via Supabase auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: { data: { full_name: form.full_name } },
-    });
-    if (authError || !authData.user) {
-      toast({ title: 'Error', description: authError?.message || 'Failed to create user', variant: 'destructive' });
-      setLoading(false);
-      return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-doctor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+          full_name: form.full_name,
+          department_id: form.department_id || null,
+          qualification: form.qualification,
+          experience_years: form.experience_years,
+          consultation_fee: form.consultation_fee,
+        }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || 'Failed to create doctor');
+      toast({ title: 'Doctor added!' });
+      setDialogOpen(false);
+      setForm({ email: '', password: '', full_name: '', department_id: '', qualification: '', experience_years: 0, consultation_fee: 0 });
+      load();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
-
-    // Add doctor role
-    await supabase.from('user_roles').insert({ user_id: authData.user.id, role: 'doctor' as any });
-
-    // Create doctor profile
-    await supabase.from('doctors').insert({
-      user_id: authData.user.id,
-      department_id: form.department_id || null,
-      qualification: form.qualification,
-      experience_years: form.experience_years,
-      consultation_fee: form.consultation_fee,
-    });
-
-    toast({ title: 'Doctor added!' });
-    setDialogOpen(false);
-    setForm({ email: '', password: '', full_name: '', department_id: '', qualification: '', experience_years: 0, consultation_fee: 0 });
-    load();
     setLoading(false);
   };
 
@@ -199,7 +198,7 @@ export function AdminPatients() {
   const [patients, setPatients] = useState<any[]>([]);
 
   useEffect(() => {
-    supabase.from('patients').select('*, profiles!patients_user_id_fkey(full_name, email, phone)').then(({ data }) => setPatients(data || []));
+    supabase.from('patients').select('*, profiles!patients_user_id_profiles_fkey(full_name, email, phone)').then(({ data }) => setPatients(data || []));
   }, []);
 
   return (
@@ -224,7 +223,7 @@ export function AdminAppointments() {
   const [appointments, setAppointments] = useState<any[]>([]);
 
   const load = async () => {
-    const { data } = await supabase.from('appointments').select('*, patients(profiles!patients_user_id_fkey(full_name)), doctors(profiles!doctors_user_id_fkey(full_name)), departments(name)').order('appointment_date', { ascending: false });
+    const { data } = await supabase.from('appointments').select('*, patients(profiles!patients_user_id_profiles_fkey(full_name)), doctors(profiles!doctors_user_id_profiles_fkey(full_name)), departments(name)').order('appointment_date', { ascending: false });
     setAppointments(data || []);
   };
 

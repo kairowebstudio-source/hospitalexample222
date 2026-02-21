@@ -57,7 +57,7 @@ export function DoctorAppointments() {
     if (!user) return;
     const { data: doc } = await supabase.from('doctors').select('id').eq('user_id', user.id).maybeSingle();
     if (doc) {
-      const { data } = await supabase.from('appointments').select('*, patients(profiles!patients_user_id_fkey(full_name)), departments(name)').eq('doctor_id', doc.id).order('appointment_date', { ascending: false });
+      const { data } = await supabase.from('appointments').select('*, patients(profiles!patients_user_id_profiles_fkey(full_name)), departments(name)').eq('doctor_id', doc.id).order('appointment_date', { ascending: false });
       setAppointments(data || []);
     }
     setLoading(false);
